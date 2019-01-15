@@ -37,16 +37,16 @@ void Int8FCLayer::Forward() {
   // top_data_int32_ -> top_data_ (int8)
   scaleTopData();
 
-  if (name() == "ip2") {
-    vector<int> ttt(10);
-    checkCudaErrors(cudaMemcpy(&ttt[0], top_data_int32_, sizeof(int) * 10, cudaMemcpyDefault));
-    for (int i = 0; i < 10; ++i) {
-      cout << ttt[i] << " ";
-    } cout << endl;
-    for (int i = 0; i < 10; ++i) {
-      cout << float(ttt[i]) / 516.3349614503815 / 26.302763503259253 << " ";
-    } cout << endl;
-  }
+  // if (name() == "ip2") {
+  //   vector<int> ttt(10);
+  //   checkCudaErrors(cudaMemcpy(&ttt[0], top_data_int32_, sizeof(int) * 10, cudaMemcpyDefault));
+  //   for (int i = 0; i < 10; ++i) {
+  //     cout << ttt[i] << " ";
+  //   } cout << endl;
+  //   for (int i = 0; i < 10; ++i) {
+  //     cout << float(ttt[i]) / 516.3349614503815 / 26.302763503259253 << " ";
+  //   } cout << endl;
+  // }
 
   // ignore bias since quantized bias are all zeros
 }

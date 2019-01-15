@@ -20,6 +20,7 @@
 #include "int8_pooling_layer.h"
 #include "int8_relu_layer.h"
 #include "int8_fc_layer.h"
+#include "utils.h"
 
 #include <iostream>
 #include <vector>
@@ -168,6 +169,19 @@ int main() {
     cout << result_fp32[i] << " ";
     if (i % 4 == 3) cout << "\n";
   } cout << endl;
+
+
+  // measure time
+  int iterations = 1000;
+  auto t1 = std::chrono::high_resolution_clock::now();
+  for (int iter = 0; iter < iterations; ++iter) {
+    net.forward();
+  }
+  checkCudaErrors(cudaDeviceSynchronize());
+  auto t2 = std::chrono::high_resolution_clock::now();
+  printf("Iteration time: %f ms\n", 
+      std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() / 1000.0f / iterations);
+
 
 
   // vector<int8_t> result_int8(1 * 20 * 24 * 24);
