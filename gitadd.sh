@@ -8,8 +8,7 @@ git add *.table
 git add *.prototxt
 git add *.caffemodel
 git add *.py
-
-
+git add *.png
 
 git add caffe.pb.a
 git add caffe.pb.cc

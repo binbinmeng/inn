@@ -140,9 +140,7 @@ public:
   string name() {
     return name_;
   }
-
-  void convert(float scale);  // implemented in int8_layer.cu to allow cuda programming
-
+  
   void setTopScale(float scale) {
     top_data_->scale_factor = scale;
   }

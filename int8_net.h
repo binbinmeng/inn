@@ -69,18 +69,7 @@ public:
 
   void forward() {
     for (int i = 0; i < layers_.size(); ++i) {
-      float scale = calib_table_[layers_[i]->name()];  // activation scale
-      if (scale != 0) {  // need scale, for conv and fc layers
-        // std::cout << layers_[i]->name() << ": " << scale << " need scale" << std::endl;
-        // layers_[i]->convert(scale);
-        layers_[i]->forward();
-        // layers_[i]->setTopScale(scale);
-      }
-      else {  // do not need scale, for other layers
-        // std::cout << layers_[i]->name() << ": " << scale << " do not need scale" << std::endl;
-        layers_[i]->forward();
-        // layers_[i]->setTopScale(layers_[i]->getBottomScale());
-      }
+      layers_[i]->forward();
     }
   }
 
