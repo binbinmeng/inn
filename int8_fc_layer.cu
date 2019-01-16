@@ -30,5 +30,5 @@ void Int8FCLayer::shuffleChannels(int8_t* data, int nn, int hh, int ww, int cc) 
 }
 
 void Int8FCLayer::scaleTopData() {
-  scaleFromFP32ToINT8<<<CAFFE_GET_BLOCKS(top_count_), CAFFE_CUDA_NUM_THREADS>>>(top_data_int32_, top_data_->data, alpha_, top_count_);
+  scaleFromFP32ToINT8<<<CAFFE_GET_BLOCKS(top_count_), CAFFE_CUDA_NUM_THREADS>>>(top_data_int32_, top_data_, alpha_, top_count_);
 }

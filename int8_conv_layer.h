@@ -70,17 +70,17 @@ void Int8ConvLayer::Forward() {
   // cout << "alpha: " << alpha_ << endl;
   checkCUDNN(cudnnConvolutionForward(
       handle_, 
-      &alpha_, bottom_desc_, bottom_data_->data,
-      filter_desc_, weight_data_->data, conv_desc_, 
+      &alpha_, bottom_desc_, bottom_data_,
+      filter_desc_, weight_data_, conv_desc_, 
       conv_algo_, work_space_, workspace_size_,
-      &beta_, top_desc_, top_data_->data));
+      &beta_, top_desc_, top_data_));
   if (has_bias_) {
     checkCUDNN(cudnnAddTensor(
         handle_,
         &one_,
-        bias_desc_, bias_data_->data,
+        bias_desc_, bias_data_,
         &one_,
-        top_desc_, top_data_->data));
+        top_desc_, top_data_));
   }
 }
 
@@ -104,16 +104,16 @@ void Int8ConvLayer::FreeCudnn() {
 }
 
 void Int8ConvLayer::CreateCuda() {
-  checkCudaErrors(cudaMalloc(&top_data_->data, sizeof(int8_t) * top_count_));
-  checkCudaErrors(cudaMalloc(&weight_data_->data, sizeof(int8_t) * weight_count_));
-  if (has_bias_) checkCudaErrors(cudaMalloc(&bias_data_->data, sizeof(int8_t) * bias_count_));
+  checkCudaErrors(cudaMalloc(&top_data_, sizeof(int8_t) * top_count_));
+  checkCudaErrors(cudaMalloc(&weight_data_, sizeof(int8_t) * weight_count_));
+  if (has_bias_) checkCudaErrors(cudaMalloc(&bias_data_, sizeof(int8_t) * bias_count_));
   checkCudaErrors(cudaMalloc(&work_space_, workspace_size_));
 }
 
 void Int8ConvLayer::FreeCuda() {
-  checkCudaErrors(cudaFree(top_data_->data));
-  checkCudaErrors(cudaFree(weight_data_->data));
-  if (has_bias_) checkCudaErrors(cudaFree(bias_data_->data));
+  checkCudaErrors(cudaFree(top_data_));
+  checkCudaErrors(cudaFree(weight_data_));
+  if (has_bias_) checkCudaErrors(cudaFree(bias_data_));
   checkCudaErrors(cudaFree(work_space_));
 }
 

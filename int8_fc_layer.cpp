@@ -3,7 +3,7 @@
 void Int8FCLayer::Forward() {
   // first, convert the bottom data into the caffe shape
   // nhwc -> nchw
-  if(name() == "ip1") shuffleChannels(bottom_data_->data, batch_size_, in_height_, in_width_, in_channels_);
+  if(name() == "ip1") shuffleChannels(bottom_data_, batch_size_, in_height_, in_width_, in_channels_);
   // then, do matrix multiplication
   int alpha = 1;
   int beta = 0;
@@ -13,11 +13,11 @@ void Int8FCLayer::Forward() {
 
   // if (name() == "ip2") {
   //   vector<int8_t> bbb(500);
-  //   checkCudaErrors(cudaMemcpy(&bbb[0], bottom_data_->data, sizeof(int8_t) * 500, cudaMemcpyDefault));
+  //   checkCudaErrors(cudaMemcpy(&bbb[0], bottom_data_, sizeof(int8_t) * 500, cudaMemcpyDefault));
   //   for (int i = 0; i < 500; ++i) cout << float(bbb[i]) / 26.302763503259253 << " ";
   //   cout << endl << endl;
   //   vector<int8_t> www(5000);
-  //   checkCudaErrors(cudaMemcpy(&www[0], weight_data_->data, sizeof(int8_t) * 5000, cudaMemcpyDefault));
+  //   checkCudaErrors(cudaMemcpy(&www[0], weight_data_, sizeof(int8_t) * 5000, cudaMemcpyDefault));
   //   // for (int i = 0; i < 5000; ++i) cout << float(www[i]) / 516.3349614503815 << " ";
   //   cout << endl << endl;
   // }
@@ -25,12 +25,12 @@ void Int8FCLayer::Forward() {
   checkCUBLAS(cublasGemmEx(
       handle_, CUBLAS_OP_T, CUBLAS_OP_N,
       n, m, k,
-      &alpha, 
-      weight_data_->data, CUDA_R_8I, k,  // A
-      bottom_data_->data, CUDA_R_8I, k,  // B
-      &beta,
+      &one_int_, 
+      weight_data_, CUDA_R_8I, k,  // A
+      bottom_data_, CUDA_R_8I, k,  // B
+      &zero_int_,
       top_data_int32_, CUDA_R_32I, n,  // C
-      // top_data_->data, CUDA_R_32I, n,  // C
+      // top_data_, CUDA_R_32I, n,  // C
       CUDA_R_32I, CUBLAS_GEMM_DEFAULT  // default algorithm
   ));
 
@@ -62,17 +62,17 @@ void Int8FCLayer::FreeCudnn() {
 }
 
 void Int8FCLayer::CreateCuda() {
-  checkCudaErrors(cudaMalloc(&top_data_->data, sizeof(int8_t) * top_count_));
+  checkCudaErrors(cudaMalloc(&top_data_, sizeof(int8_t) * top_count_));
   checkCudaErrors(cudaMalloc(&top_data_int32_, sizeof(int) * top_count_));
-  checkCudaErrors(cudaMalloc(&weight_data_->data, sizeof(int8_t) * weight_count_));
-  if (has_bias_) checkCudaErrors(cudaMalloc(&bias_data_->data, sizeof(int8_t) * bias_count_));
+  checkCudaErrors(cudaMalloc(&weight_data_, sizeof(int8_t) * weight_count_));
+  if (has_bias_) checkCudaErrors(cudaMalloc(&bias_data_, sizeof(int8_t) * bias_count_));
 }
 
 void Int8FCLayer::FreeCuda() {
-  checkCudaErrors(cudaFree(top_data_->data));
+  checkCudaErrors(cudaFree(top_data_));
   checkCudaErrors(cudaFree(top_data_int32_));
-  checkCudaErrors(cudaFree(weight_data_->data));
-  if (has_bias_) checkCudaErrors(cudaFree(bias_data_->data));
+  checkCudaErrors(cudaFree(weight_data_));
+  if (has_bias_) checkCudaErrors(cudaFree(bias_data_));
 }
 
 void Int8FCLayer::SetCudnn() {}

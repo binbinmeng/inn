@@ -53,9 +53,9 @@ void Int8PoolingLayer::Forward() {
   float beta = 0.0f;
   checkCUDNN(cudnnPoolingForward(handle_, pooling_desc_,
       &alpha,
-      bottom_desc_, bottom_data_->data,
+      bottom_desc_, bottom_data_,
       &beta,
-      top_desc_, top_data_->data));
+      top_desc_, top_data_));
 }
 
 void Int8PoolingLayer::CreateCudnn() {
@@ -74,11 +74,11 @@ void Int8PoolingLayer::FreeCudnn() {
 }
 
 void Int8PoolingLayer::CreateCuda() {
-  checkCudaErrors(cudaMalloc(&top_data_->data, sizeof(int8_t) * top_count_));
+  checkCudaErrors(cudaMalloc(&top_data_, sizeof(int8_t) * top_count_));
 }
 
 void Int8PoolingLayer::FreeCuda() {
-  checkCudaErrors(cudaFree(top_data_->data));
+  checkCudaErrors(cudaFree(top_data_));
 }
 
 void Int8PoolingLayer::SetCudnn() {

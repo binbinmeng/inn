@@ -23,15 +23,15 @@
 
 using namespace std;
 
-struct Int8Blob {
-  int8_t* data;
-  float scale_factor;
+// struct Int8Blob {
+//   int8_t* data;
+//   float scale_factor;
 
-  Int8Blob() {
-    data = NULL;
-    scale_factor = 1.0;
-  }
-};
+//   Int8Blob() {
+//     data = NULL;
+//     scale_factor = 1.0;
+//   }
+// };
 
 class Int8Layer {
 public:
@@ -43,25 +43,25 @@ public:
     top_count_ = batch_size_ * out_channels_ * out_height_ * out_width_;
     weight_count_ = 0;
     bias_count_ = 0;
-    top_data_ = new Int8Blob();
-    weight_data_ = new Int8Blob();
-    bias_data_ = new Int8Blob();
+    // top_data_ = new Int8Blob();
+    // weight_data_ = new Int8Blob();
+    // bias_data_ = new Int8Blob();
     alpha_ = beta_ = 0.0;  // for convolution forward
     one_ = 1.0;
     // in_channels_origin_ = ci;
   }
     
   virtual ~Int8Layer() {
-    delete top_data_;
-    delete weight_data_;
-    delete bias_data_;
+    // delete top_data_;
+    // delete weight_data_;
+    // delete bias_data_;
   }
 
   void setWeight(const vector<int8_t>& weight) {
     assert(weight_count_ > 0);
     assert(weight.size() > 0);  // if not enough, pad 0 at the end 
     checkCudaErrors(cudaMemcpyAsync(
-        weight_data_->data, &weight[0],
+        weight_data_, &weight[0],
         sizeof(int8_t) * min(weight_count_, int(weight.size())), cudaMemcpyHostToDevice));
   }
 
@@ -69,7 +69,7 @@ public:
     assert(bias_count_ > 0);
     assert(bias.size() > 0);  // if not enough, pad 0 at the end 
     checkCudaErrors(cudaMemcpyAsync(
-        bias_data_->data, &bias[0],
+        bias_data_, &bias[0],
         sizeof(int8_t) * min(bias_count_, int(bias.size())), cudaMemcpyHostToDevice));
   }
 
@@ -77,7 +77,7 @@ public:
     assert(bottom_count_ > 0);
     assert(bottom.size() > 0);  // if not enough, pad 0 at the end 
     checkCudaErrors(cudaMemcpyAsync(
-        bottom_data_->data, &bottom[0],
+        bottom_data_, &bottom[0],
         sizeof(int8_t) * min(bottom_count_, int(bottom.size())), cudaMemcpyHostToDevice));
   }
 
@@ -85,7 +85,7 @@ public:
     assert(top_count_ > 0);
     assert(top.size() > 0);
     checkCudaErrors(cudaMemcpyAsync(
-        &top[0], top_data_->data,
+        &top[0], top_data_,
         sizeof(int8_t) * min(top_count_, int(top.size())), cudaMemcpyDeviceToHost));
   }
 
@@ -95,7 +95,7 @@ public:
     int minn = min(top_count_, int(top.size()));
     vector<int8_t> tmp(minn);
     checkCudaErrors(cudaMemcpyAsync(
-        &tmp[0], top_data_->data,
+        &tmp[0], top_data_,
         sizeof(int8_t) * minn, cudaMemcpyDeviceToHost));
 
     float scale = bias_scale_;
@@ -114,18 +114,17 @@ public:
 
   void setBiasScale(float scale) {
     bias_scale_ = scale;
-    top_data_->scale_factor = scale;
   }
 
   void forward() {
     Forward();
   }
 
-  void setBottomData(Int8Blob* top_ptr) {
+  void setBottomData(int8_t* top_ptr) {
     bottom_data_ = top_ptr;
   }
 
-  Int8Blob* getTopData() {
+  int8_t* getTopData() {
     return top_data_;
   }
 
@@ -140,14 +139,14 @@ public:
   string name() {
     return name_;
   }
-  
-  void setTopScale(float scale) {
-    top_data_->scale_factor = scale;
-  }
 
-  float getBottomScale() {
-    return bottom_data_->scale_factor;
-  }
+  // void setTopScale(float scale) {
+  //   top_data_->scale_factor = scale;
+  // }
+
+  // float getBottomScale() {
+  //   return bottom_data_->scale_factor;
+  // }
 
   virtual void readWeightFromModel(const caffe::LayerParameter& layer_param, float weight_scale, float bias_scale) {
 
@@ -176,10 +175,11 @@ public:
   // int8_t* bottom_data_;
   // int8_t* top_data_;
   // int8_t* weight_data_;
-  Int8Blob* bottom_data_;
-  Int8Blob* top_data_;
-  Int8Blob* weight_data_;
-  Int8Blob* bias_data_;
+  int8_t* bottom_data_;
+  int8_t* top_data_;
+  int8_t* weight_data_;
+  int8_t* bias_data_;
+
 
 
 protected:
@@ -189,9 +189,15 @@ protected:
   virtual void FreeCudnn() = 0;
   virtual void FreeCuda() = 0;
 
+  // for alpha and beta in cudnn and cublas functions
+  // initialized in int8_layer.cpp
+  static float one_float_;
+  static float zero_float_;
+  static int one_int_;
+  static int zero_int_;
+
 private:
 
 };
-
 
 #endif

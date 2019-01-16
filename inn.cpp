@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
   // construct network
   Int8Net net;
   Int8DataLayer data_layer("data", 1, 4, 28, 28);
-  data_layer.setTopScale(128);
+  // data_layer.setTopScale(128);
   net.add(data_layer);
   Int8ConvLayer conv1("conv1", 1, 1, 20, 28, 28, 5, 1, 0, true);  // 20 24 24
   net.add(conv1);
@@ -108,15 +108,15 @@ int main(int argc, char *argv[]) {
 
 
   // measure time
-  int iterations = 1000;
-  auto t1 = std::chrono::high_resolution_clock::now();
-  for (int iter = 0; iter < iterations; ++iter) {
-    net.forward();
-  }
-  checkCudaErrors(cudaDeviceSynchronize());
-  auto t2 = std::chrono::high_resolution_clock::now();
-  printf("Iteration time: %f ms\n", 
-      std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() / 1000.0f / iterations);
+  // int iterations = 1000;
+  // auto t1 = std::chrono::high_resolution_clock::now();
+  // for (int iter = 0; iter < iterations; ++iter) {
+  //   net.forward();
+  // }
+  // checkCudaErrors(cudaDeviceSynchronize());
+  // auto t2 = std::chrono::high_resolution_clock::now();
+  // printf("Iteration time: %f ms\n", 
+  //     std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() / 1000.0f / iterations);
 
   return 0;
 }
