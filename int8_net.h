@@ -20,15 +20,14 @@ public:
   bool readCalibration(string table_name) {
     std::ifstream in(table_name);
     if(!in) {
-      cout << "calibration file not found." << endl;
+      LOG(INFO) << "calibration file not found.";
       return false;
     }
     string name;
     float value;
-    // cout << "Reading calibration table...\n";
     while (!in.eof()){
       in >> name >> value;
-      cout << "\t" << name << " : " << value << "\n";
+      LOG(INFO) << "\t" << name << " : " << value;
       calib_table_[name] = value;
     }
     in.close();
@@ -40,12 +39,7 @@ public:
     layers_.push_back(&layer);
     if (layers_.size() > 1) {
       int size = layers_.size();
-      cout << "bottom count : " << layers_[size-1]->bottom_count() << " vs top count : " << layers_[size-2]->top_count() << endl;
-      assert(layers_[size-1]->bottom_count() == layers_[size-2]->top_count());
-      // if (layers_[size-1]->bottom_count() == layers_[size-2]->top_count()) {
-      //   cout << "bottom count : " << layers_[size-1]->bottom_count() << " vs top count : " << layers_[size-2]->top_count() << endl;
-      //   assert(layers_[size-1]->bottom_count() == layers_[size-2]->top_count());
-      // }
+      CHECK_EQ(layers_[size-2]->top_count(), layers_[size-1]->bottom_count()) << "last top size and bottom size do not match";
       layers_[size-1]->setBottomData(layers_[size-2]->getTopData());
     }
     layer_table_[layer.name()] = layers_.size() - 1;
@@ -53,16 +47,18 @@ public:
   }
 
   void feed(const vector<int8_t>& weight) {
-    assert(layers_.size() > 0);
+    CHECK_GE(layers_.size(), 0) << "cannot feed, no layer added to the net";
     layers_[0]->feed(weight);
   }
 
   void get(vector<int8_t>& top) {
+    CHECK_GE(layers_.size(), 0) << "cannot get, no layer added to the net";
     forward();
     layers_[layers_.size()-1]->get(top);
   }
 
   void get(vector<float>& top) {
+    CHECK_GE(layers_.size(), 0) << "cannot get, no layer added to the net";
     forward();
     layers_[layers_.size()-1]->get(top);
   }
@@ -77,7 +73,7 @@ public:
     caffe::NetParameter caffemodel;
     bool status = readProtoFromBinary(model_name.c_str(), &caffemodel);
     if (!status) {
-      cout << "caffemodel not found" << endl;
+      LOG(INFO) << "caffemodel not found";
       exit(1);
     }
     map<string, int> layer_map;
@@ -131,28 +127,28 @@ private:
       if (calib_table_.count(name) != 0) {  // for conv, ip
         if (next_scale_layer.count(name) != 0) {
           string next_name = next_scale_layer[name];
-          cout << "[calculateAlpha] " << name << " : " << calib_table_[name] << " " << calib_table_[name + "_param_0"] << endl;
-          cout << "                 " << next_name << " : " << calib_table_[next_name] << " " << calib_table_[next_name + "_param_0"] << endl;
+          LOG(INFO) << "[calculateAlpha] " << name << " : " << calib_table_[name] << " " << calib_table_[name + "_param_0"];
+          LOG(INFO) << "                 " << next_name << " : " << calib_table_[next_name] << " " << calib_table_[next_name + "_param_0"];
           float alpha = calib_table_[next_name] / (calib_table_[name] * calib_table_[name + "_param_0"]);
           layers_[i]->setAlphaAndBeta(alpha, 0.0);
           layers_[i]->setBiasScale(calib_table_[next_name]);
         }
         else {
-          cout << "[calculateAlpha] " << name << " : " << calib_table_[name] << " " << calib_table_[name + "_param_0"] << endl;
+          LOG(INFO) << "[calculateAlpha] " << name << " : " << calib_table_[name] << " " << calib_table_[name + "_param_0"];
           float alpha = 1.0 / calib_table_[name + "_param_0"];
           layers_[i]->setAlphaAndBeta(alpha, 0.0);
           layers_[i]->setBiasScale(calib_table_[name]);
         }
       }
       else {  // for pool, relu
-        cout << "[calculateAlpha] " << name << " , " << next_scale_layer[name] << endl;
+        LOG(INFO) << "[calculateAlpha] " << name << " , " << next_scale_layer[name];
         string next_name = next_scale_layer[name];
         layers_[i]->setBiasScale(calib_table_[next_name]);
       }
     }
   }
 
-  void getNextScaleLayer(map<string, string>& next_scale_layer) {
+  void getNextScaleLayer(map<string, string>& next_scale_layer) {  // need to be improved
     next_scale_layer["conv1"] = "conv2";
     next_scale_layer["conv2"] = "ip1";
     next_scale_layer["ip1"] = "ip2";

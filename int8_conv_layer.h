@@ -35,11 +35,6 @@ public:
 
   virtual void readWeightFromModel(const caffe::LayerParameter& layer_param, float weight_scale, float bias_scale);
 
-  // void setAlpha(float alpha) {
-  //   alpha_ = alpha;
-  //   beta_ = 0.0
-  // }
-
 protected:
 
 private:
@@ -54,6 +49,10 @@ private:
   int stride_;
   int pad_;
 
+  // input and output channels must be multiples of 4
+  // the origin channels are saved for readWeightFromModel()
+  int in_channels_origin_;
+
   cudnnHandle_t handle_;
   cudnnTensorDescriptor_t bottom_desc_, top_desc_, bias_desc_;
   cudnnFilterDescriptor_t filter_desc_;
@@ -67,19 +66,18 @@ private:
 
 void Int8ConvLayer::Forward() {
   // checkCudaErrors(cudaSetDevice(m_gpuid));
-  // cout << "alpha: " << alpha_ << endl;
   checkCUDNN(cudnnConvolutionForward(
       handle_, 
       &alpha_, bottom_desc_, bottom_data_,
       filter_desc_, weight_data_, conv_desc_, 
       conv_algo_, work_space_, workspace_size_,
-      &beta_, top_desc_, top_data_));
+      &zero_float_, top_desc_, top_data_));
   if (has_bias_) {
     checkCUDNN(cudnnAddTensor(
         handle_,
-        &one_,
+        &one_float_,
         bias_desc_, bias_data_,
-        &one_,
+        &one_float_,
         top_desc_, top_data_));
   }
 }
@@ -134,7 +132,7 @@ void Int8ConvLayer::SetCudnn() {
   checkCUDNN(cudnnGetConvolution2dForwardOutputDim(
       conv_desc_, bottom_desc_, filter_desc_,
       &n, &c, &h, &w));
-  cout << name_ << " output nchw: " << n << " " << c << " " << h << " " << w << " " << batch_size_ << " " << out_channels_ << " " << out_height_ << " " << out_width_ << endl;
+  LOG(INFO) << name_ << " output nchw: " << n << " " << c << " " << h << " " << w << " " << batch_size_ << " " << out_channels_ << " " << out_height_ << " " << out_width_;
   
   checkCUDNN(cudnnSetTensor4dDescriptor(
       top_desc_, CUDNN_TENSOR_NHWC, CUDNN_DATA_INT8,
@@ -151,8 +149,8 @@ void Int8ConvLayer::SetCudnn() {
       handle_, bottom_desc_, filter_desc_, conv_desc_, top_desc_,
       conv_algo_, &workspace_size_));
 
-  cout << name_ << " workspace size: " << workspace_size_ << endl;
-  assert(workspace_size_ > 0);
+  LOG(INFO) << name_ << " workspace size: " << workspace_size_;
+  CHECK_GE(workspace_size_, 0) << "the size of workspace should be larger than 0";
 }
 
 void Int8ConvLayer::readWeightFromModel(const caffe::LayerParameter& layer_param, float weight_scale, float bias_scale) {
@@ -166,7 +164,7 @@ void Int8ConvLayer::readWeightFromModel(const caffe::LayerParameter& layer_param
   rr = 5;
   ss = 5;
   int cc_extend = in_channels_;
-  cout << "conv scaled weight: " << name() << kk << " " << cc << " " << rr << " " << ss << " " << cc_extend << "\n";
+  LOG(INFO) << "conv scaled weight: " << name() << kk << " " << cc << " " << rr << " " << ss << " " << cc_extend;
   // magic
   for (int k = 0; k < kk; ++k) {
     for (int r = 0; r < rr; ++r) {
@@ -186,7 +184,7 @@ void Int8ConvLayer::readWeightFromModel(const caffe::LayerParameter& layer_param
   setWeight(weight_data);
 
   if (bias_count_ > 0 && layer_param.blobs_size() > 1) {
-    cout << "conv scaled bias " << name() << "\n";
+    LOG(INFO) << "conv scaled bias " << name();
     const float *bias = layer_param.blobs(1).data().data();
     vector<int8_t> bias_data(bias_count_);
     for (int k = 0; k < bias_count_; ++k) {

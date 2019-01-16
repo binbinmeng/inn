@@ -32,6 +32,9 @@ using namespace cv;
 using namespace std;
 
 int main(int argc, char *argv[]) {
+  FLAGS_alsologtostderr = 1;
+  // google::InitGoogleLogging("INFO");
+
   string image_file;
   if (argc == 1) {
     image_file = "mnist_0.png";
@@ -41,6 +44,7 @@ int main(int argc, char *argv[]) {
     image_file = "mnist_" + number + ".png";
   }
   cout << "reading image " << image_file << endl;
+
 
   // read image
   Mat image = imread(image_file, 0);
@@ -107,16 +111,17 @@ int main(int argc, char *argv[]) {
   } cout << endl;
 
 
+
   // measure time
-  // int iterations = 1000;
-  // auto t1 = std::chrono::high_resolution_clock::now();
-  // for (int iter = 0; iter < iterations; ++iter) {
-  //   net.forward();
-  // }
-  // checkCudaErrors(cudaDeviceSynchronize());
-  // auto t2 = std::chrono::high_resolution_clock::now();
-  // printf("Iteration time: %f ms\n", 
-  //     std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() / 1000.0f / iterations);
+  int iterations = 1000;
+  auto t1 = std::chrono::high_resolution_clock::now();
+  for (int iter = 0; iter < iterations; ++iter) {
+    net.forward();
+  }
+  checkCudaErrors(cudaDeviceSynchronize());
+  auto t2 = std::chrono::high_resolution_clock::now();
+  printf("Iteration time: %f ms\n", 
+      std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() / 1000.0f / iterations);
 
   return 0;
 }

@@ -41,15 +41,11 @@ private:
 };
 
 void Int8ReluLayer::Forward() {
-  float alpha = 1.0f;
-  float beta = 0.0f;
-  // int8_t alpha = 1;
-  // int8_t beta = 0;
   checkCUDNN(cudnnActivationForward(this->handle_,
       activ_desc_,
-      &alpha, // cudnn::dataType<Dtype>::one,
+      &one_float_,
       this->bottom_desc_, bottom_data_,
-      &beta, //cudnn::dataType<Dtype>::zero,
+      &zero_float_,
       this->top_desc_, top_data_));
 }
 

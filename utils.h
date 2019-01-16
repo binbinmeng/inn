@@ -17,6 +17,8 @@
 #include <google/protobuf/message.h>
 #include "caffe.pb.h"
 
+#include <glog/logging.h>
+
 
 #define checkCUDNN(status)                                                     \
   do {                                                                         \

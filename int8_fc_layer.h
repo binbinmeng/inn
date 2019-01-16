@@ -17,7 +17,7 @@ class Int8FCLayer : public Int8Layer {
 public:
   explicit Int8FCLayer(string name, int n, int ci, int hi, int wi, int co, int ho, int wo, bool bias)
       : Int8Layer(name, n, ci, hi, wi, co, ho, wo) {
-    weight_count_ = in_channels_ * in_height_ * in_width_ * out_channels_ * out_height_ *  out_width_;  // override the base weight_count_
+    weight_count_ = in_channels_ * in_height_ * in_width_ * out_channels_ * out_height_ *  out_width_;
     bias_count_ = out_channels_ * out_height_ *  out_width_;
     has_bias_ = bias;
     CreateCudnn();
@@ -43,12 +43,13 @@ private:
   virtual void FreeCuda();
   void SetCudnn();
 
-  void shuffleChannels(int8_t* data, int nn, int hh, int ww, int cc);
+  void shuffleChannels(int nn, int hh, int ww, int cc, int max_n);
   void scaleTopData();
 
   cublasHandle_t handle_;
 
-  int* top_data_int32_;
+  int8_t* bottom_data_shuffled_;  // for shuffle channel
+  int* top_data_int32_;  // for intermediate value of forward
 };
 
 #endif

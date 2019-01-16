@@ -20,18 +20,7 @@
 
 #include "utils.h"
 
-
 using namespace std;
-
-// struct Int8Blob {
-//   int8_t* data;
-//   float scale_factor;
-
-//   Int8Blob() {
-//     data = NULL;
-//     scale_factor = 1.0;
-//   }
-// };
 
 class Int8Layer {
 public:
@@ -43,67 +32,49 @@ public:
     top_count_ = batch_size_ * out_channels_ * out_height_ * out_width_;
     weight_count_ = 0;
     bias_count_ = 0;
-    // top_data_ = new Int8Blob();
-    // weight_data_ = new Int8Blob();
-    // bias_data_ = new Int8Blob();
     alpha_ = beta_ = 0.0;  // for convolution forward
-    one_ = 1.0;
-    // in_channels_origin_ = ci;
-  }
-    
-  virtual ~Int8Layer() {
-    // delete top_data_;
-    // delete weight_data_;
-    // delete bias_data_;
   }
 
+  virtual ~Int8Layer() {}
+
   void setWeight(const vector<int8_t>& weight) {
-    assert(weight_count_ > 0);
-    assert(weight.size() > 0);  // if not enough, pad 0 at the end 
+    CHECK_EQ(weight_count_, weight.size()) << "weight size does not match";
     checkCudaErrors(cudaMemcpyAsync(
         weight_data_, &weight[0],
-        sizeof(int8_t) * min(weight_count_, int(weight.size())), cudaMemcpyHostToDevice));
+        sizeof(int8_t) * weight_count_, cudaMemcpyHostToDevice));
   }
 
   void setBias(const vector<int8_t>& bias) {
-    assert(bias_count_ > 0);
-    assert(bias.size() > 0);  // if not enough, pad 0 at the end 
+    CHECK_EQ(bias_count_, bias.size()) << "bias size does not match";
     checkCudaErrors(cudaMemcpyAsync(
         bias_data_, &bias[0],
-        sizeof(int8_t) * min(bias_count_, int(bias.size())), cudaMemcpyHostToDevice));
+        sizeof(int8_t) * bias_count_, cudaMemcpyHostToDevice));
   }
 
   void feed(const vector<int8_t>& bottom) {
-    assert(bottom_count_ > 0);
-    assert(bottom.size() > 0);  // if not enough, pad 0 at the end 
+    CHECK_EQ(bottom_count_, bottom.size()) << "data size does not match";
     checkCudaErrors(cudaMemcpyAsync(
         bottom_data_, &bottom[0],
         sizeof(int8_t) * min(bottom_count_, int(bottom.size())), cudaMemcpyHostToDevice));
   }
 
   void get(vector<int8_t>& top) {
-    assert(top_count_ > 0);
-    assert(top.size() > 0);
+    CHECK_LE(top_count_, top.size()) << "top vector is smaller than top count";
     checkCudaErrors(cudaMemcpyAsync(
         &top[0], top_data_,
         sizeof(int8_t) * min(top_count_, int(top.size())), cudaMemcpyDeviceToHost));
   }
 
   void get(vector<float>& top) {
-    assert(top_count_ > 0);
-    assert(top.size() > 0);
+    CHECK_LE(top_count_, top.size()) << "top vector is smaller than top count";
     int minn = min(top_count_, int(top.size()));
     vector<int8_t> tmp(minn);
     checkCudaErrors(cudaMemcpyAsync(
         &tmp[0], top_data_,
         sizeof(int8_t) * minn, cudaMemcpyDeviceToHost));
-
-    float scale = bias_scale_;
-    // float scale = top_data_->scale_factor;
-    cout << "[get] scale for output layer: " << scale << endl;
-
+    LOG(INFO) << "[get] scale for output layer: " << bias_scale_;
     for (int i = 0; i < minn; ++i) {
-      top[i] = float(tmp[i]) / scale;
+      top[i] = float(tmp[i]) / bias_scale_;
     }
   }
 
@@ -140,25 +111,11 @@ public:
     return name_;
   }
 
-  // void setTopScale(float scale) {
-  //   top_data_->scale_factor = scale;
-  // }
-
-  // float getBottomScale() {
-  //   return bottom_data_->scale_factor;
-  // }
-
-  virtual void readWeightFromModel(const caffe::LayerParameter& layer_param, float weight_scale, float bias_scale) {
-
-  }
+  virtual void readWeightFromModel(const caffe::LayerParameter& layer_param, float weight_scale, float bias_scale) {}  // not needed by default
 
   int batch_size_;
   int in_channels_, in_height_, in_width_;
   int out_channels_, out_height_, out_width_;
-
-  // input and output channels must be multiples of 4
-  // the origin channels are saved for reading model
-  int in_channels_origin_;
 
   int bottom_count_;
   int top_count_;
@@ -167,10 +124,9 @@ public:
   string name_;
 
   // for forward convolution
-  float alpha_;
+  float alpha_;  // restore scale after conv and fc
   float beta_;
-  float one_;
-  float bias_scale_;  // the scale of the next layer
+  float bias_scale_;  // the activation scale of the next layer
 
   // int8_t* bottom_data_;
   // int8_t* top_data_;

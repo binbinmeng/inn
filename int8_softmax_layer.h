@@ -40,16 +40,14 @@ private:
 };
 
 void Int8SoftmaxLayer::Forward() {
-  float alpha = 1.0f;
-  float beta = 0.0f;
 
-  // need to convert to fp32
+  // incomplete, need to convert to fp32
 
   checkCUDNN(cudnnSoftmaxForward(handle_, CUDNN_SOFTMAX_ACCURATE,  // CUDNN_SOFTMAX_FAST, CUDNN_SOFTMAX_LOG
         CUDNN_SOFTMAX_MODE_CHANNEL,  // CUDNN_SOFTMAX_MODE_INSTANCE
-        &alpha,
+        &one_float_,
         bottom_desc_, bottom_data_,
-        &beta,
+        &zero_float_,
         top_desc_, top_data_));
 }
 
@@ -82,6 +80,5 @@ void Int8SoftmaxLayer::SetCudnn() {
       top_desc_, CUDNN_TENSOR_NHWC, CUDNN_DATA_INT8,
       batch_size_, out_channels_, out_height_, out_width_));
 }
-
 
 #endif

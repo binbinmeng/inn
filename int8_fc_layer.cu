@@ -20,13 +20,8 @@ __global__ void scaleFromFP32ToINT8(int* data_int32, int8_t* data_int8, float sc
   }
 }
 
-void Int8FCLayer::shuffleChannels(int8_t* data, int nn, int hh, int ww, int cc) {
-  int max_n = nn * hh * ww * cc;
-  int8_t* data_bak;
-  checkCudaErrors(cudaMalloc(&data_bak, sizeof(int8_t) * max_n));
-  checkCudaErrors(cudaMemcpy(data_bak, data, sizeof(int8_t) * max_n, cudaMemcpyDefault));
-  shuffleFCLayer<<<CAFFE_GET_BLOCKS(max_n), CAFFE_CUDA_NUM_THREADS>>>(data, data_bak, nn, hh, ww, cc, max_n);
-  checkCudaErrors(cudaFree(data_bak));
+void Int8FCLayer::shuffleChannels(int nn, int hh, int ww, int cc, int max_n) {
+  shuffleFCLayer<<<CAFFE_GET_BLOCKS(max_n), CAFFE_CUDA_NUM_THREADS>>>(bottom_data_shuffled_, bottom_data_, nn, hh, ww, cc, max_n);
 }
 
 void Int8FCLayer::scaleTopData() {

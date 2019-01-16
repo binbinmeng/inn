@@ -49,12 +49,10 @@ private:
 };
 
 void Int8PoolingLayer::Forward() {
-  float alpha = 1.0f;
-  float beta = 0.0f;
   checkCUDNN(cudnnPoolingForward(handle_, pooling_desc_,
-      &alpha,
+      &one_float_,
       bottom_desc_, bottom_data_,
-      &beta,
+      &zero_float_,
       top_desc_, top_data_));
 }
 
@@ -87,8 +85,7 @@ void Int8PoolingLayer::SetCudnn() {
   } else if (method_ == "AVE") {
     mode_ = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
   } else {
-    cout << "unidentified pooling type\n";
-    assert(false);
+    LOG(ERROR) << "unidentified pooling type";
   }
   checkCUDNN(cudnnSetTensor4dDescriptor(
       bottom_desc_, CUDNN_TENSOR_NHWC, CUDNN_DATA_INT8,
@@ -96,7 +93,8 @@ void Int8PoolingLayer::SetCudnn() {
   checkCUDNN(cudnnSetTensor4dDescriptor(
       top_desc_, CUDNN_TENSOR_NHWC, CUDNN_DATA_INT8,
       batch_size_, out_channels_, out_height_, out_width_));
-  checkCUDNN(cudnnSetPooling2dDescriptor(pooling_desc_, mode_, CUDNN_PROPAGATE_NAN, 
+  checkCUDNN(cudnnSetPooling2dDescriptor(
+      pooling_desc_, mode_, CUDNN_PROPAGATE_NAN, 
       2, 2, 0, 0, 2, 2));  // k, k, p, p, s, s
   // H_ = (H - pool_height) / stride + padding
   // int n, c, h, w;
@@ -106,6 +104,5 @@ void Int8PoolingLayer::SetCudnn() {
   //     &n, &c, &h, &w));
   // cout << n << " " << c << " " << h << " " << w << "\n";
 }
-
 
 #endif
