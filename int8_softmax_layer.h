@@ -2,15 +2,6 @@
 #define INT8_SOFTMAX_LAYER_H
 
 #include "int8_layer.h"
-#include "cuda.h"
-#include "cudnn.h"
-#include "cuda_runtime.h"
-#include <string>
-#include <vector>
-#include <memory>
-#include <sstream>
-#include <iostream>
-#include <assert.h>
 
 class Int8SoftmaxLayer : public Int8Layer {
 public:

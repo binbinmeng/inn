@@ -91,7 +91,7 @@ void Int8FCLayer::readWeightFromModel(const caffe::LayerParameter& layer_param, 
     for (int k = 0; k < bias_count_; ++k) {
       int scaled_bias = std::round(bias[k] * bias_scale_);
       bias_data[k] = scaled_bias > 127 ? 127 : (scaled_bias < -127 ? -127 : scaled_bias);
-      // if (name() == "ip2") cout << bias[k] << " ";
+      // cout << scaled_bias << " ";
     }
     setBias(bias_data);
   }

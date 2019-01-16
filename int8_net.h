@@ -2,14 +2,6 @@
 #define INT8_NET_H
 
 #include "int8_layer.h"
-#include <map>
-
-#include <fstream>
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <google/protobuf/text_format.h>
-#include <google/protobuf/message.h>
-#include "caffe.pb.h"
 
 class Int8Net {
 public:
@@ -153,6 +145,7 @@ private:
     next_scale_layer["conv2"] = "ip1";
     next_scale_layer["ip1"] = "ip2";
 
+    next_scale_layer["data"] = "conv1";
     next_scale_layer["pool1"] = "conv2";
     next_scale_layer["pool2"] = "ip1";
     next_scale_layer["relu1"] = "ip2";

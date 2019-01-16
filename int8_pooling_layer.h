@@ -1,15 +1,7 @@
 #ifndef INT8_POOLING_LAYER_H
 #define INT8_POOLING_LAYER_H
 
-#include "cuda.h"
-#include "cudnn.h"
-#include "cuda_runtime.h"
-#include <string>
-#include <vector>
-#include <memory>
-#include <sstream>
-#include <iostream>
-#include <assert.h>
+#include "int8_layer.h"
 
 class Int8PoolingLayer : public Int8Layer {
 public:

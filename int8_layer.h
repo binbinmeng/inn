@@ -1,23 +1,6 @@
 #ifndef INT8_LAYER_H
 #define INT8_LAYER_H
 
-#include "cuda.h"
-#include "cudnn.h"
-#include "cuda_runtime.h"
-#include <string>
-#include <vector>
-#include <memory>
-#include <sstream>
-#include <iostream>
-#include <assert.h>
-#include <algorithm>
-
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <google/protobuf/text_format.h>
-#include <google/protobuf/message.h>
-#include "caffe.pb.h"
-
 #include "utils.h"
 
 using namespace std;
@@ -72,7 +55,6 @@ public:
     checkCudaErrors(cudaMemcpyAsync(
         &tmp[0], top_data_,
         sizeof(int8_t) * minn, cudaMemcpyDeviceToHost));
-    LOG(INFO) << "[get] scale for output layer: " << bias_scale_;
     for (int i = 0; i < minn; ++i) {
       top[i] = float(tmp[i]) / bias_scale_;
     }
@@ -135,9 +117,7 @@ public:
   int8_t* top_data_;
   int8_t* weight_data_;
   int8_t* bias_data_;
-
-
-
+  
 protected:
   virtual void Forward() = 0;
   virtual void CreateCudnn() = 0;

@@ -1,7 +1,3 @@
-
-// #include "int8_pooling_layer.h"
-// #include "int8_data_layer.h"
-
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>        // 核心组件
 #include <opencv2/highgui/highgui.hpp>  // GUI
@@ -55,8 +51,6 @@ int main(int argc, char *argv[]) {
       int pos = i * 28 * 4 + j * 4;  // because size of channel must be 4x
       imagedata[pos] = image.data[i * 28 + j] / 2;
       imagedata[pos + 1] = imagedata[pos + 2] = imagedata[pos + 3] = 0;
-      // cout << (image.data[i * 28 + j] == 0 ? 0 : 1) << " ";  // show the image
-      // cout << int(image.data[i * 28 + j]) << " ";  // show the image
       cout << (imagedata[pos] == 0 ? 0 : 1) << " ";  // show the image
     }
     cout << endl;
@@ -66,7 +60,6 @@ int main(int argc, char *argv[]) {
   // construct network
   Int8Net net;
   Int8DataLayer data_layer("data", 1, 4, 28, 28);
-  // data_layer.setTopScale(128);
   net.add(data_layer);
   Int8ConvLayer conv1("conv1", 1, 1, 20, 28, 28, 5, 1, 0, true);  // 20 24 24
   net.add(conv1);
@@ -97,7 +90,7 @@ int main(int argc, char *argv[]) {
   int nn = 1;
   int cc = 1;
   int hh = 1;
-  int ww = 12;
+  int ww = 10;
   vector<int8_t> result_int8(nn * cc * hh * ww);
   net.get(result_int8);
   for (int i = 0; i < nn * cc * hh * ww; ++i) {
@@ -107,7 +100,7 @@ int main(int argc, char *argv[]) {
   net.get(result_fp32);
   for (int i = 0; i < nn * cc * hh * ww; ++i) {
     cout << result_fp32[i] << " ";
-    if (i % 4 == 3) cout << "\n";
+    // if (i % 4 == 3) cout << "\n";
   } cout << endl;
 
 
@@ -120,8 +113,11 @@ int main(int argc, char *argv[]) {
   }
   checkCudaErrors(cudaDeviceSynchronize());
   auto t2 = std::chrono::high_resolution_clock::now();
-  printf("Iteration time: %f ms\n", 
-      std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() / 1000.0f / iterations);
+
+  LOG(INFO) << "run " << iterations << " times.";
+  LOG(INFO) << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() / 1000.0f / iterations << " ms";
+  // printf("Iteration time: %f ms\n", 
+  //     std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() / 1000.0f / iterations);
 
   return 0;
 }

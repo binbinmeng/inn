@@ -2,15 +2,6 @@
 #define INT8_RELU_LAYER_H
 
 #include "int8_layer.h"
-#include "cuda.h"
-#include "cudnn.h"
-#include "cuda_runtime.h"
-#include <string>
-#include <vector>
-#include <memory>
-#include <sstream>
-#include <iostream>
-#include <assert.h>
 
 class Int8ReluLayer : public Int8Layer {
 public:
@@ -83,6 +74,5 @@ void Int8ReluLayer::SetCudnn() {
       activ_desc_, CUDNN_ACTIVATION_RELU,
       CUDNN_PROPAGATE_NAN, double(0)));
 }
-
 
 #endif
