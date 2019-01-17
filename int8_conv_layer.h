@@ -41,7 +41,7 @@ private:
   int pad_;
 
   // input and output channels must be multiples of 4
-  // the origin channels are saved for readWeightFromModel()
+  // the original in channels are saved for readWeightFromModel()
   int in_channels_origin_;
 
   cudnnHandle_t handle_;
@@ -57,29 +57,29 @@ private:
 
 void Int8ConvLayer::Forward() {
   // checkCudaErrors(cudaSetDevice(m_gpuid));
-  checkCUDNN(cudnnConvolutionForward(
+  cudnnConvolutionForward(
       handle_, 
       &alpha_, bottom_desc_, bottom_data_,
       filter_desc_, weight_data_, conv_desc_, 
       conv_algo_, work_space_, workspace_size_,
-      &zero_float_, top_desc_, top_data_));
+      &zero_float_, top_desc_, top_data_);
   if (has_bias_) {
-    checkCUDNN(cudnnAddTensor(
+    cudnnAddTensor(
         handle_,
         &one_float_,
         bias_desc_, bias_data_,
         &one_float_,
-        top_desc_, top_data_));
+        top_desc_, top_data_);
   }
 }
 
 void Int8ConvLayer::CreateCudnn() {
-  checkCUDNN(cudnnCreate(&handle_));
+  checkCUDNN(cudnnCreate(&handle_));  // handle
   checkCUDNN(cudnnCreateTensorDescriptor(&bottom_desc_));  // bottom
   checkCUDNN(cudnnCreateFilterDescriptor(&filter_desc_));  // weight
   checkCUDNN(cudnnCreateConvolutionDescriptor(&conv_desc_));  // conv
   checkCUDNN(cudnnCreateTensorDescriptor(&top_desc_));  // top
-  if (has_bias_) checkCUDNN(cudnnCreateTensorDescriptor(&bias_desc_));
+  if (has_bias_) checkCUDNN(cudnnCreateTensorDescriptor(&bias_desc_));  // bias
   SetCudnn();
 }
 

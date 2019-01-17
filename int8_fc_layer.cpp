@@ -7,12 +7,12 @@
 void Int8FCLayer::Forward() {
   // first, convert the bottom data into the caffe shape, from nhwc -> nchw
   int8_t* bottom_data_gemm = bottom_data_;
-  if(name() == "ip1") {  // needed to be improved
+  if(name() == "ip1") {  // ugly, needed to be improved
     shuffleChannels(batch_size_, in_height_, in_width_, in_channels_, bottom_count_);
     bottom_data_gemm = bottom_data_shuffled_;
   }
   // then, do matrix multiplication
-  checkCUBLAS(cublasGemmEx(
+  cublasGemmEx(
       handle_, CUBLAS_OP_T, CUBLAS_OP_N,
       n, m, k,
       &one_int_, 
@@ -21,10 +21,12 @@ void Int8FCLayer::Forward() {
       &zero_int_,
       top_data_int32_, CUDA_R_32I, n,  // C
       CUDA_R_32I, CUBLAS_GEMM_DEFAULT  // default algorithm
-  ));
+  );
 
-  // top_data_int32_ -> top_data_ (int8)
+  // finally, scale top data from int32 to int8
   scaleTopData();
+
+  // ignore bias since quantized bias are all zeros
 
   // if (name() == "ip2") {
   //   vector<int> ttt(10);
@@ -36,8 +38,6 @@ void Int8FCLayer::Forward() {
   //     cout << float(ttt[i]) / 516.3349614503815 / 26.302763503259253 << " ";
   //   } cout << endl;
   // }
-
-  // ignore bias since quantized bias are all zeros
 }
 
 void Int8FCLayer::CreateCudnn() {  // cudnn not supported in fully connected layer, so we actually use cublas

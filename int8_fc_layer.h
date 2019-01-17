@@ -21,8 +21,6 @@ public:
 
   virtual void readWeightFromModel(const caffe::LayerParameter& layer_param, float weight_scale, float bias_scale);
 
-  bool has_bias_;
-
 protected:
 
 private:
@@ -33,13 +31,14 @@ private:
   virtual void FreeCuda();
   void SetCudnn();
 
-  void shuffleChannels(int nn, int hh, int ww, int cc, int max_n);
-  void scaleTopData();
+  void shuffleChannels(int nn, int hh, int ww, int cc, int max_n);  // selectively do before gemm
+  void scaleTopData();  // do after gemm
 
   cublasHandle_t handle_;
 
   int8_t* bottom_data_shuffled_;  // for shuffle channel
   int* top_data_int32_;  // for intermediate value of forward
+  bool has_bias_;
 };
 
 #endif

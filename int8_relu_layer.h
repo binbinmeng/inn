@@ -32,12 +32,12 @@ private:
 };
 
 void Int8ReluLayer::Forward() {
-  checkCUDNN(cudnnActivationForward(this->handle_,
+  cudnnActivationForward(this->handle_,
       activ_desc_,
       &one_float_,
       this->bottom_desc_, bottom_data_,
       &zero_float_,
-      this->top_desc_, top_data_));
+      this->top_desc_, top_data_);
 }
 
 void Int8ReluLayer::CreateCudnn() {

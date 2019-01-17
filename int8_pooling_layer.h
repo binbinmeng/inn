@@ -41,11 +41,11 @@ private:
 };
 
 void Int8PoolingLayer::Forward() {
-  checkCUDNN(cudnnPoolingForward(handle_, pooling_desc_,
+  cudnnPoolingForward(handle_, pooling_desc_,
       &one_float_,
       bottom_desc_, bottom_data_,
       &zero_float_,
-      top_desc_, top_data_));
+      top_desc_, top_data_);
 }
 
 void Int8PoolingLayer::CreateCudnn() {
