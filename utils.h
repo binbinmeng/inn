@@ -8,6 +8,7 @@
 #include <cublas_v2.h>
 
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 
 #include <google/protobuf/io/coded_stream.h>
