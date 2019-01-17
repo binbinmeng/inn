@@ -17,7 +17,6 @@
 #include "int8_relu_layer.h"
 #include "int8_fc_layer.h"
 // #include "int8_softmax_layer.h"
-#include "utils.h"
 
 #include <iostream>
 #include <vector>
@@ -51,7 +50,7 @@ int main(int argc, char *argv[]) {
       int pos = i * 28 * 4 + j * 4;  // because size of channel must be 4x
       imagedata[pos] = image.data[i * 28 + j] / 2;
       imagedata[pos + 1] = imagedata[pos + 2] = imagedata[pos + 3] = 0;
-      cout << (imagedata[pos] == 0 ? 0 : 1) << " ";  // show the image
+      cout << (imagedata[pos] == 0 ? ' ' : '@');  // show the image
     }
     cout << endl;
   }
@@ -106,7 +105,7 @@ int main(int argc, char *argv[]) {
 
 
   // measure time
-  int iterations = 1000;
+  int iterations = 100;
   auto t1 = std::chrono::high_resolution_clock::now();
   for (int iter = 0; iter < iterations; ++iter) {
     net.forward();
