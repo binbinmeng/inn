@@ -99,13 +99,13 @@ void Int8ConvBALayer::SetCudnn() {
   checkCUDNN(cudnnSetTensor4dDescriptor(
       z_desc_, CUDNN_TENSOR_NHWC, CUDNN_DATA_INT8,
       n, c, h, w));
-  
+      
   if (activ_type_ == "relu") {
     checkCUDNN(cudnnSetActivationDescriptor(
         activ_desc_, CUDNN_ACTIVATION_RELU,
         CUDNN_NOT_PROPAGATE_NAN, double(0)));
   }
-  else if (activ_type_ == "identity" || activ_type_ == "none") {
+  else if (activ_type_ == "identity" || activ_type_ == "none") {  // identity is only supported after cudnn7.1
     checkCUDNN(cudnnSetActivationDescriptor(
         activ_desc_, CUDNN_ACTIVATION_IDENTITY,
         CUDNN_NOT_PROPAGATE_NAN, double(0)));
