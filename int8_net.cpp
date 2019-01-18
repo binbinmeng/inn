@@ -34,6 +34,10 @@ void Int8Net::forward() {
   }
 }
 
+int Int8Net::topCount() {
+  return layers_[layers_.size()-1]->top_count();
+}
+
 bool Int8Net::readCalibration(string table_name) {
   std::ifstream in(table_name);
   if(!in) {

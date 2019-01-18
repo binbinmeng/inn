@@ -1,56 +1,19 @@
 #include "int8_convba_layer.h"
 
 void Int8ConvBALayer::Forward() {
-  // checkCudaErrors(cudaSetDevice(m_gpuid));
-  // cudnnConvolutionForward(
-  //     handle_, 
-  //     &alpha_, bottom_desc_, bottom_data_,
-  //     filter_desc_, weight_data_, conv_desc_, 
-  //     conv_algo_, work_space_, workspace_size_,
-  //     &zero_float_, top_desc_, top_data_);
-  // if (has_bias_) {
-  //   cudnnAddTensor(
-  //       handle_,
-  //       &one_float_,
-  //       bias_desc_, bias_data_,
-  //       &one_float_,
-  //       top_desc_, top_data_);
-  // }
-
   // y = act ( alpha1 * conv(x) + alpha2 * z + bias )
   // x          w	        y and z     bias        alpha1/alpha2
   // X_INT8     X_INT8    X_INT8      X_FLOAT     X_FLOAT
   // X_INT8     X_INT8    X_FLOAT     X_FLOAT     X_FLOAT
-
-  checkCUDNN(cudnnConvolutionBiasActivationForward(
+  cudnnConvolutionBiasActivationForward(
       handle_,
       &alpha_, bottom_desc_, bottom_data_,
       filter_desc_, weight_data_, conv_desc_,
       conv_algo_, work_space_, workspace_size_,
       &zero_float_, z_desc_, z_data_,
-      bias_desc_, bias_data_,
+      bias_desc_, bias_data_float_,
       activ_desc_,
-      top_desc_, top_data_));
-
-  // checkCUDNN(cudnnConvolutionBiasActivationForward(
-  //     cudnnHandle_t                       handle,
-  //     const void                         *alpha1,
-  //     const cudnnTensorDescriptor_t       xDesc,
-  //     const void                         *x,
-  //     const cudnnFilterDescriptor_t       wDesc,
-  //     const void                         *w,
-  //     const cudnnConvolutionDescriptor_t  convDesc,
-  //     cudnnConvolutionFwdAlgo_t           algo,
-  //     void                               *workSpace,
-  //     size_t                              workSpaceSizeInBytes,
-  //     const void                         *alpha2,
-  //     const cudnnTensorDescriptor_t       zDesc,
-  //     const void                         *z,
-  //     const cudnnTensorDescriptor_t       biasDesc,
-  //     const void                         *bias,
-  //     const cudnnActivationDescriptor_t   activationDesc,
-  //     const cudnnTensorDescriptor_t       yDesc,
-  //     void                               *y));
+      top_desc_, top_data_);
 }
 
 void Int8ConvBALayer::CreateCudnn() {
@@ -79,15 +42,15 @@ void Int8ConvBALayer::FreeCudnn() {
 void Int8ConvBALayer::CreateCuda() {
   checkCudaErrors(cudaMalloc(&top_data_, sizeof(int8_t) * top_count_));
   checkCudaErrors(cudaMalloc(&weight_data_, sizeof(int8_t) * weight_count_));
-  if (has_bias_) checkCudaErrors(cudaMalloc(&bias_data_, sizeof(int8_t) * bias_count_));
+  if (has_bias_) checkCudaErrors(cudaMalloc(&bias_data_float_, sizeof(float) * bias_count_));
   checkCudaErrors(cudaMalloc(&work_space_, workspace_size_));
-  checkCudaErrors(cudaMalloc(&z_data_, sizeof(int8_t) * bias_count_));
+  checkCudaErrors(cudaMalloc(&z_data_, sizeof(int8_t) * top_count_));
 }
 
 void Int8ConvBALayer::FreeCuda() {
   checkCudaErrors(cudaFree(top_data_));
   checkCudaErrors(cudaFree(weight_data_));
-  if (has_bias_) checkCudaErrors(cudaFree(bias_data_));
+  if (has_bias_) checkCudaErrors(cudaFree(bias_data_float_));
   checkCudaErrors(cudaFree(work_space_));
   checkCudaErrors(cudaFree(z_data_));
 }
@@ -117,9 +80,10 @@ void Int8ConvBALayer::SetCudnn() {
 
   if (has_bias_) {
     checkCUDNN(cudnnSetTensor4dDescriptor(
-        bias_desc_, CUDNN_TENSOR_NHWC, CUDNN_DATA_INT8,
+        bias_desc_, CUDNN_TENSOR_NHWC, CUDNN_DATA_FLOAT,
         1, out_channels_, 1, 1));
   }
+
   conv_algo_ = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM;  // the only algo for int8
   checkCUDNN(cudnnGetConvolutionForwardWorkspaceSize(
       handle_, bottom_desc_, filter_desc_, conv_desc_, top_desc_,
@@ -129,12 +93,26 @@ void Int8ConvBALayer::SetCudnn() {
   CHECK_GE(workspace_size_, 0) << "the size of workspace should be larger than 0";
 
   // new for convba
+  // checkCUDNN(cudnnSetTensor4dDescriptor(
+  //     z_desc_, CUDNN_TENSOR_NHWC, CUDNN_DATA_INT8,
+  //     1, out_channels_, 1, 1));
   checkCUDNN(cudnnSetTensor4dDescriptor(
       z_desc_, CUDNN_TENSOR_NHWC, CUDNN_DATA_INT8,
-      1, out_channels_, 1, 1));
-  checkCUDNN(cudnnSetActivationDescriptor(
-      activ_desc_, CUDNN_ACTIVATION_IDENTITY,
-      CUDNN_NOT_PROPAGATE_NAN, double(0)));
+      n, c, h, w));
+  
+  if (activ_type_ == "relu") {
+    checkCUDNN(cudnnSetActivationDescriptor(
+        activ_desc_, CUDNN_ACTIVATION_RELU,
+        CUDNN_NOT_PROPAGATE_NAN, double(0)));
+  }
+  else if (activ_type_ == "identity" || activ_type_ == "none") {
+    checkCUDNN(cudnnSetActivationDescriptor(
+        activ_desc_, CUDNN_ACTIVATION_IDENTITY,
+        CUDNN_NOT_PROPAGATE_NAN, double(0)));
+  }
+  else {
+    LOG(ERROR) << "Activation type of convBA layer not identified";
+  }
 }
 
 void Int8ConvBALayer::readWeightFromModel(const caffe::LayerParameter& layer_param, float weight_scale, float bias_scale) {
@@ -170,12 +148,14 @@ void Int8ConvBALayer::readWeightFromModel(const caffe::LayerParameter& layer_par
   if (bias_count_ > 0 && layer_param.blobs_size() > 1) {
     LOG(INFO) << "conv scaled bias " << name();
     const float *bias = layer_param.blobs(1).data().data();
-    vector<int8_t> bias_data(bias_count_);
+    vector<float> bias_data_float(bias_count_);
     for (int k = 0; k < bias_count_; ++k) {
-      int scaled_bias = std::round(bias[k] * bias_scale_);
-      // int scaled_bias = std::round(bias[k] * bias_scale);
-      bias_data[k] = scaled_bias > 127 ? 127 : (scaled_bias < -127 ? -127 : scaled_bias);
+      bias_data_float[k] = bias[k] * bias_scale_;
     }
-    setBias(bias_data);
+    // setBias(bias_data);
+    CHECK_EQ(bias_count_, bias_data_float.size()) << "bias size does not match";
+    checkCudaErrors(cudaMemcpyAsync(
+        bias_data_float_, &bias_data_float[0],
+        sizeof(float) * bias_count_, cudaMemcpyHostToDevice));
   }
 }

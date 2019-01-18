@@ -16,6 +16,7 @@ public:
   void forward();
   bool readCalibration(string table_name);
   void readCaffeModel(string model_name);
+  int topCount();
 
 protected:
 

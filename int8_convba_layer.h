@@ -15,6 +15,7 @@ public:
     workspace_size_ = 0;
     has_bias_ = bias;
     in_channels_origin_ = ci;
+    activ_type_ = activ_type;
     CreateCudnn();
     CreateCuda();
   }
@@ -55,7 +56,9 @@ private:
   bool has_bias_;
 
   // new for convba
+  string activ_type_;
   int8_t* z_data_;
+  float* bias_data_float_;
   cudnnTensorDescriptor_t z_desc_;
   cudnnActivationDescriptor_t activ_desc_;
 };

@@ -17,6 +17,7 @@
 #include "int8_relu_layer.h"
 #include "int8_fc_layer.h"
 // #include "int8_softmax_layer.h"
+#include "int8_convba_layer.h"
 
 #include <iostream>
 #include <vector>
@@ -60,12 +61,16 @@ int main(int argc, char *argv[]) {
   Int8Net net;
   Int8DataLayer data_layer("data", 1, 4, 28, 28);
   net.add(data_layer);
-  Int8ConvLayer conv1("conv1", 1, 1, 20, 28, 28, 5, 1, 0, true);  // 20 24 24
+  Int8ConvBALayer conv1("conv1", 1, 1, 20, 28, 28, 5, 1, 0, true, "relu");  // 20 24 24
   net.add(conv1);
+  // Int8ConvLayer conv1("conv1", 1, 1, 20, 28, 28, 5, 1, 0, true);  // 20 24 24
+  // net.add(conv1);
   Int8PoolingLayer pool1("pool1", "MAX", 1, 20, 24, 24);   // 20 12 12
   net.add(pool1);
-  Int8ConvLayer conv2("conv2", 1, 20, 40, 12, 12, 5, 1, 0, true);  // 40 8 8
+  Int8ConvBALayer conv2("conv2", 1, 20, 40, 12, 12, 5, 1, 0, true, "relu");  // 40 8 8
   net.add(conv2);
+  // Int8ConvLayer conv2("conv2", 1, 20, 40, 12, 12, 5, 1, 0, true);  // 40 8 8
+  // net.add(conv2);
   Int8PoolingLayer pool2("pool2", "MAX", 1, 40, 8, 8);   // 40 4 4
   net.add(pool2);
   Int8FCLayer ip1("ip1", 1, 40, 4, 4, 1, 1, 500, true);  // 1, 1, 500
@@ -86,35 +91,34 @@ int main(int argc, char *argv[]) {
   // net.forward();
   // return 0;
 
-  int nn = 1;
-  int cc = 1;
-  int hh = 1;
-  int ww = 10;
-  vector<int8_t> result_int8(nn * cc * hh * ww);
+
+
+  int count = net.topCount();
+  vector<int8_t> result_int8(count);
   net.get(result_int8);
-  for (int i = 0; i < nn * cc * hh * ww; ++i) {
+  for (int i = 0; i < count; ++i) {
     cout << int(result_int8[i]) << " ";
   } cout << endl;
-  vector<float> result_fp32(nn * cc * hh * ww);
+  vector<float> result_fp32(count);
   net.get(result_fp32);
-  for (int i = 0; i < nn * cc * hh * ww; ++i) {
+  for (int i = 0; i < count; ++i) {
     cout << result_fp32[i] << " ";
-    // if (i % 4 == 3) cout << "\n";
+    if (i % 4 == 3) cout << "\n";
   } cout << endl;
 
 
 
   // measure time
-  int iterations = 100;
-  auto t1 = std::chrono::high_resolution_clock::now();
-  for (int iter = 0; iter < iterations; ++iter) {
-    net.forward();
-  }
-  checkCudaErrors(cudaDeviceSynchronize());
-  auto t2 = std::chrono::high_resolution_clock::now();
+  // int iterations = 1000000;
+  // auto t1 = std::chrono::high_resolution_clock::now();
+  // for (int iter = 0; iter < iterations; ++iter) {
+  //   net.forward();
+  // }
+  // checkCudaErrors(cudaDeviceSynchronize());
+  // auto t2 = std::chrono::high_resolution_clock::now();
 
-  LOG(INFO) << "run " << iterations << " times.";
-  LOG(INFO) << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() / 1000.0f / iterations << " ms";
+  // LOG(INFO) << "run " << iterations << " times.";
+  // LOG(INFO) << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() / 1000.0f / iterations << " ms";
   // printf("Iteration time: %f ms\n", 
   //     std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() / 1000.0f / iterations);
 
