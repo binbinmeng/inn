@@ -3,7 +3,7 @@
 void Int8ConvBALayer::Forward() {
   // y = act ( alpha1 * conv(x) + alpha2 * z + bias )
   // x          w	        y and z     bias        alpha1/alpha2
-  // X_INT8     X_INT8    X_INT8      X_FLOAT     X_FLOAT
+  // X_INT8     X_INT8    X_INT8      X_FLOAT     X_FLOAT         we use this format
   // X_INT8     X_INT8    X_FLOAT     X_FLOAT     X_FLOAT
   cudnnConvolutionBiasActivationForward(
       handle_,
@@ -99,7 +99,7 @@ void Int8ConvBALayer::SetCudnn() {
   checkCUDNN(cudnnSetTensor4dDescriptor(
       z_desc_, CUDNN_TENSOR_NHWC, CUDNN_DATA_INT8,
       n, c, h, w));
-      
+
   if (activ_type_ == "relu") {
     checkCUDNN(cudnnSetActivationDescriptor(
         activ_desc_, CUDNN_ACTIVATION_RELU,
