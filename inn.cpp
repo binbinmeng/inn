@@ -92,6 +92,7 @@ int main(int argc, char *argv[]) {
   // return 0;
 
 
+
   int count = net.topCount();
   vector<int8_t> result_int8(count);
   net.get(result_int8);
