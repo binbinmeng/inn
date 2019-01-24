@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
 
 
   // measure time
-  int iterations = 1000000;
+  int iterations = 1000;
   auto t1 = std::chrono::high_resolution_clock::now();
   for (int iter = 0; iter < iterations; ++iter) {
     net.forward();
