@@ -18,6 +18,9 @@ public:
   void readCaffeModel(string model_name);
   int topCount();
 
+  void setOutputLayer(string layer_name);
+  void readPrototxt(string proto_name);
+
 protected:
 
 private:
@@ -29,6 +32,8 @@ private:
   vector<Int8Layer*> layers_;
   std::map<string, int> layer_table_;
   std::map<string, float> calib_table_;
+
+  string output_layer_;
 };
 
 #endif

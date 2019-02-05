@@ -38,6 +38,45 @@ int Int8Net::topCount() {
   return layers_[layers_.size()-1]->top_count();
 }
 
+void Int8Net::setOutputLayer(string layer_name) {
+  output_layer_ = layer_name;
+}
+
+void Int8Net::readPrototxt(string proto_name) {
+  caffe::NetParameter caffemodel;
+  bool status = readProtoFromBinary(model_name.c_str(), &caffemodel);
+  map<string, int> layer_map;
+  for (int i = 0; i < caffemodel.layer_size(); ++i){
+    layer_map[caffemodel.layer(i).name()] = i;
+  }
+  // 先找到所有需要计算的层
+  // 再根据每个层在prototxt文件中的顺序添加到Int8Net中
+  // 要考虑in-place的情况
+  vector<int> needed_layer;
+  stack<string> added_layer;
+  added_layer.push(output_layer);
+
+  while (!added_layer.empty()) {
+    string layer_name = added_layer.top();
+    added_layer.pop();
+    int index = layer_map[layer_name];
+    needed_layer.push_back(index);
+    int bottom_size = caffemodel.layer(index).bottom_size();
+    for (int i = 0; i < bottom_size; ++i) {
+      added_layer.push(caffemodel.layer(index).bottom(i));
+    }
+  }
+
+  sort(needed_layer.begin(), needed_layer.end());
+  needed_layer.erase(unique(needed_layer.begin(), needed_layer.end()), needed_layer.end());
+  sort(needed_layer.begin(), needed_layer.end());
+  
+  for (int i = 0; i < needed_layer.size(); ++i) {
+    cout << needed_layer[i] << " ";
+  }
+  cout << "end of readPrototxt\n";
+}
+
 bool Int8Net::readCalibration(string table_name) {
   std::ifstream in(table_name);
   if(!in) {
